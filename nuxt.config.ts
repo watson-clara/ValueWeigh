@@ -3,13 +3,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: [
     'bootstrap/dist/css/bootstrap.min.css',
-    'bootstrap-icons/font/bootstrap-icons.css',
-    '@progress/kendo-theme-default/dist/all.css',
-    '@progress/kendo-theme-bootstrap/dist/all.css'
+    '@progress/kendo-theme-default/dist/all.css'
   ],
   plugins: [
     '~/plugins/bootstrap.js',
-    '~/plugins/axios.js'
+    '~/plugins/kendo.js'
   ],
   app: {
     head: {
@@ -17,28 +15,41 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Make better decisions by comparing options based on your criteria.' }
+        { name: 'description', content: 'A tool for comparing options based on weighted criteria' }
       ]
     }
   },
   compatibilityDate: '2025-03-28',
   build: {
-    transpile: ['bootstrap', '@popperjs/core']
+    transpile: [
+      '@progress/kendo-vue-grid',
+      '@progress/kendo-vue-inputs',
+      '@progress/kendo-vue-buttons',
+      '@progress/kendo-licensing'
+    ]
   },
   vite: {
     optimizeDeps: {
-      include: ['bootstrap', '@popperjs/core']
-    },
-    ssr: {
-      noExternal: ['bootstrap']
+      include: [
+        '@progress/kendo-vue-grid',
+        '@progress/kendo-vue-inputs',
+        '@progress/kendo-vue-buttons',
+        '@progress/kendo-licensing'
+      ]
     }
   },
+  ssr: false,
   experimental: {
     payloadExtraction: false
   },
   router: {
     options: {
       strict: false
+    }
+  },
+  runtimeConfig: {
+    public: {
+      kendoLicenseKey: process.env.KENDO_LICENSE_KEY
     }
   }
 })

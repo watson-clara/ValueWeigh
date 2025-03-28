@@ -36,7 +36,7 @@
         <!-- Save Scenario Button -->
         <button 
           class="btn btn-outline-success" 
-          @click="showSaveModal"
+          @click="openSaveModal"
           :disabled="!canSave"
         >
           Save Scenario
@@ -45,20 +45,17 @@
     </div>
     
     <div class="row">
-      <div class="col-md-12">
+      <div class="col-md-6">
         <CriteriaGrid
           v-model:criteria="criteria"
-          :initial-criteria="initialCriteria"
+          class="mb-4"
         />
       </div>
-    </div>
-
-    <div class="row mt-4">
-      <div class="col-md-12">
+      <div class="col-md-6">
         <OptionsGrid
           v-model:options="options"
           :criteria="criteria"
-          :initial-options="initialOptions"
+          class="mb-4"
         />
       </div>
     </div>
@@ -138,41 +135,33 @@ import { useNuxtApp } from '#app'
 const router = useRouter()
 const { $axios } = useNuxtApp()
 
-const criteria = ref([])
-const options = ref([])
-const scenarios = ref([])
-const scenarioName = ref('')
-const saveModalRef = ref(null)
-let saveModal = null
+// Initialize with default data
+const criteria = ref([
+  { id: 1, name: 'Price', weight: 5 },
+  { id: 2, name: 'Quality', weight: 5 }
+])
 
-// Initial criteria for demonstration
-const initialCriteria = [
-  { id: 1, name: 'Cost', weight: 8 },
-  { id: 2, name: 'Quality', weight: 7 },
-  { id: 3, name: 'Features', weight: 6 }
-]
-
-// Initial options for demonstration
-const initialOptions = [
+const options = ref([
   {
     id: 1,
-    name: 'Option A',
-    scores: {
-      1: 8,
-      2: 7,
-      3: 6
-    }
+    name: 'Option 1',
+    scores: { 1: 5, 2: 5 }
   },
   {
     id: 2,
-    name: 'Option B',
-    scores: {
-      1: 6,
-      2: 8,
-      3: 7
-    }
+    name: 'Option 2',
+    scores: { 1: 5, 2: 5 }
   }
-]
+])
+
+const scenarios = ref([])
+const selectedScenario = ref(null)
+const showSaveModal = ref(false)
+const showLoadModal = ref(false)
+const scenarioName = ref('')
+const scenarioDescription = ref('')
+const saveModalRef = ref(null)
+let saveModal = null
 
 // Check if we can proceed (at least 2 criteria and 2 options with names)
 const canProceed = computed(() => {
@@ -203,7 +192,7 @@ const navigateToResults = () => {
 // Load scenarios from the backend
 const fetchScenarios = async () => {
   try {
-    const response = await $axios.get('/api/scenarios')
+    const response = await $axios.get('/scenarios')
     scenarios.value = response.data || []
   } catch (error) {
     console.error('Error fetching scenarios:', error)
@@ -231,7 +220,7 @@ onMounted(() => {
 })
 
 // Function to show modal
-const showSaveModal = () => {
+const openSaveModal = () => {
   if (saveModal) {
     saveModal.show()
   }
@@ -248,7 +237,7 @@ const hideSaveModal = () => {
 // Save scenario function
 const saveScenario = async () => {
   try {
-    const response = await $axios.post('/api/scenarios', {
+    const response = await $axios.post('/scenarios', {
       name: scenarioName.value,
       criteria: criteria.value,
       options: options.value
@@ -260,7 +249,7 @@ const saveScenario = async () => {
     // Hide the modal and reset the form
     hideSaveModal()
     
-    // Show success message (you can implement this as needed)
+    // Show success message
     alert('Scenario saved successfully!')
   } catch (error) {
     console.error('Error saving scenario:', error)

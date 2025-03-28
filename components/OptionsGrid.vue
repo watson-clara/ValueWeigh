@@ -2,65 +2,63 @@
   <div>
     <h2 class="h4 mb-3">Options</h2>
     <div class="grid-container">
-      <KGrid
-        :data="localOptions"
-        :style="{ height: '300px' }"
-      >
-        <KGridToolbar>
-          <button 
-            type="button" 
-            class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary"
-            @click="addOption"
-          >
-            Add New Option
-          </button>
-        </KGridToolbar>
-        <KGridColumn field="name" title="Name" :width="200">
-          <template v-slot:cell="{ dataItem }">
-            <input
-              type="text"
-              class="k-input k-input-md k-rounded-md k-input-solid"
-              v-model="dataItem.name"
-              @input="updateOptions"
-              placeholder="Enter option name"
-            />
-          </template>
-        </KGridColumn>
-        <KGridColumn 
-          v-for="criterion in criteria" 
-          :key="criterion.id" 
-          :field="'scores.' + criterion.id" 
-          :title="criterion.name"
-          :width="150"
+      <div class="grid-wrapper">
+        <KGrid
+          :data="localOptions"
+          :style="{ height: '300px' }"
         >
-          <template v-slot:cell="{ dataItem }">
-            <KNumericTextBox
-              v-model="dataItem.scores[criterion.id]"
-              :min="1"
-              :max="10"
-              :step="1"
-              @change="updateOptions"
-            />
-          </template>
-        </KGridColumn>
-        <KGridColumn title="Actions" :width="100">
-          <template v-slot:cell="{ dataItem }">
-            <button
-              type="button"
-              class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-error"
-              @click="removeOption(dataItem)"
-            >
-              Delete
-            </button>
-          </template>
-        </KGridColumn>
-      </KGrid>
+          <KGridColumn field="name" title="Name" :width="200">
+            <template v-slot:cell="{ dataItem }">
+              <KInput
+                v-model="dataItem.name"
+                @input="updateOptions"
+                placeholder="Enter option name"
+              />
+            </template>
+          </KGridColumn>
+          <KGridColumn 
+            v-for="criterion in criteria" 
+            :key="criterion.id"
+            :field="'scores.' + criterion.id" 
+            :title="criterion.name"
+            :width="150"
+          >
+            <template v-slot:cell="{ dataItem }">
+              <KNumericTextBox
+                v-model="dataItem.scores[criterion.id]"
+                :min="1"
+                :max="10"
+                :step="1"
+                @change="updateOptions"
+              />
+            </template>
+          </KGridColumn>
+          <KGridColumn title="Actions" :width="100">
+            <template v-slot:cell="{ dataItem }">
+              <KButton
+                theme-color="error"
+                @click="removeOption(dataItem)"
+              >
+                Delete
+              </KButton>
+            </template>
+          </KGridColumn>
+        </KGrid>
+      </div>
+      <div class="grid-actions mt-3">
+        <KButton
+          theme-color="primary"
+          @click="handleAddOption"
+        >
+          Add New Option
+        </KButton>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   options: {
@@ -70,53 +68,21 @@ const props = defineProps({
   criteria: {
     type: Array,
     required: true
-  },
-  initialOptions: {
-    type: Array,
-    required: true
   }
 })
 
 const emit = defineEmits(['update:options'])
 
-// Initialize with a default empty option if no data is provided
-const getDefaultOption = (criteria) => {
-  const scores = {}
-  criteria.forEach(criterion => {
-    scores[criterion.id] = 5
-  })
-  return {
-    id: 1,
-    name: '',
-    scores
-  }
-}
-
 const localOptions = ref([])
 
-// Initialize options with initial data
-onMounted(() => {
-  if (props.options.length === 0 && props.initialOptions.length > 0) {
-    localOptions.value = [...props.initialOptions]
-  } else if (props.options.length > 0) {
-    localOptions.value = [...props.options]
-  } else {
-    // If no options provided, create a default one
-    localOptions.value = [getDefaultOption(props.criteria)]
-  }
-  emit('update:options', localOptions.value)
-})
-
-// Watch for external changes
-watch(() => props.options, (newValue) => {
-  if (newValue.length > 0) {
-    localOptions.value = [...newValue]
-  }
-}, { deep: true })
+// Initialize localOptions when props change
+watch(() => props.options, (newOptions) => {
+  localOptions.value = [...newOptions]
+}, { immediate: true })
 
 // Watch for criteria changes to update scores structure
 watch(() => props.criteria, (newCriteria) => {
-  localOptions.value.forEach(option => {
+  localOptions.value = localOptions.value.map(option => {
     const scores = { ...option.scores }
     // Add new criteria scores
     newCriteria.forEach(criterion => {
@@ -130,37 +96,35 @@ watch(() => props.criteria, (newCriteria) => {
         delete scores[id]
       }
     })
-    option.scores = scores
+    return { ...option, scores }
   })
-  updateOptions()
+  emit('update:options', localOptions.value)
 }, { deep: true })
 
-const addOption = () => {
+const updateOptions = () => {
+  emit('update:options', [...localOptions.value])
+}
+
+const handleAddOption = () => {
   const newId = Math.max(0, ...localOptions.value.map(o => o.id)) + 1
   const scores = {}
   props.criteria.forEach(criterion => {
     scores[criterion.id] = 5
   })
-  localOptions.value.push({
+  const newOption = {
     id: newId,
     name: '',
     scores
-  })
-  updateOptions()
+  }
+  localOptions.value = [...localOptions.value, newOption]
+  emit('update:options', localOptions.value)
 }
 
-const removeOption = (item) => {
+const removeOption = (option) => {
   if (localOptions.value.length <= 1) {
     return // Don't remove the last option
   }
-  const index = localOptions.value.findIndex(o => o.id === item.id)
-  if (index !== -1) {
-    localOptions.value.splice(index, 1)
-    updateOptions()
-  }
-}
-
-const updateOptions = () => {
+  localOptions.value = localOptions.value.filter(o => o.id !== option.id)
   emit('update:options', localOptions.value)
 }
 </script>
@@ -169,6 +133,13 @@ const updateOptions = () => {
 .grid-container {
   display: flex;
   flex-direction: column;
+}
+
+.grid-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .k-grid {
