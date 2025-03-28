@@ -6,7 +6,16 @@
         :data="localCriteria"
         :style="{ height: '300px' }"
       >
-        <KGridColumn field="name" title="Name">
+        <KGridToolbar>
+          <button 
+            type="button" 
+            class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary"
+            @click="addCriteria"
+          >
+            Add New Criterion
+          </button>
+        </KGridToolbar>
+        <KGridColumn field="name" title="Name" :width="200">
           <template v-slot:cell="{ dataItem }">
             <input
               type="text"
@@ -17,7 +26,7 @@
             />
           </template>
         </KGridColumn>
-        <KGridColumn field="weight" title="Weight (1-10)">
+        <KGridColumn field="weight" title="Weight (1-10)" :width="150">
           <template v-slot:cell="{ dataItem }">
             <KNumericTextBox
               v-model="dataItem.weight"
@@ -28,7 +37,7 @@
             />
           </template>
         </KGridColumn>
-        <KGridColumn width="100">
+        <KGridColumn title="Actions" :width="100">
           <template v-slot:cell="{ dataItem }">
             <button
               type="button"
@@ -40,15 +49,6 @@
           </template>
         </KGridColumn>
       </KGrid>
-      <div class="grid-actions mt-3">
-        <button 
-          type="button" 
-          class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary"
-          @click="addCriteria"
-        >
-          Add New Criterion
-        </button>
-      </div>
     </div>
   </div>
 </template>
@@ -69,21 +69,32 @@ const props = defineProps({
 
 const emit = defineEmits(['update:criteria'])
 
-const localCriteria = ref([])
+// Initialize with a default empty criterion if no data is provided
+const defaultCriteria = [
+  {
+    id: 1,
+    name: '',
+    weight: 5
+  }
+]
+
+const localCriteria = ref(defaultCriteria)
 
 // Initialize criteria with initial data
 onMounted(() => {
   if (props.criteria.length === 0 && props.initialCriteria.length > 0) {
     localCriteria.value = [...props.initialCriteria]
-    emit('update:criteria', localCriteria.value)
-  } else {
+  } else if (props.criteria.length > 0) {
     localCriteria.value = [...props.criteria]
   }
+  emit('update:criteria', localCriteria.value)
 })
 
 // Watch for external changes
 watch(() => props.criteria, (newValue) => {
-  localCriteria.value = [...newValue]
+  if (newValue.length > 0) {
+    localCriteria.value = [...newValue]
+  }
 }, { deep: true })
 
 const addCriteria = () => {
@@ -97,6 +108,9 @@ const addCriteria = () => {
 }
 
 const removeCriteria = (item) => {
+  if (localCriteria.value.length <= 1) {
+    return // Don't remove the last criterion
+  }
   const index = localCriteria.value.findIndex(c => c.id === item.id)
   if (index !== -1) {
     localCriteria.value.splice(index, 1)
@@ -113,12 +127,6 @@ const updateCriteria = () => {
 .grid-container {
   display: flex;
   flex-direction: column;
-}
-
-.grid-actions {
-  display: flex;
-  justify-content: flex-start;
-  gap: 1rem;
 }
 
 .k-grid {
