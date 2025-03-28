@@ -2,8 +2,8 @@ import axios from 'axios'
 
 export const useAxios = () => {
   const instance = axios.create({
-    baseURL: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000',
-    timeout: 10000,
+    baseURL: 'http://localhost:3001/api',
+    timeout: 5000,
     headers: {
       'Content-Type': 'application/json'
     }
