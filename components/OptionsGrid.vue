@@ -1,48 +1,55 @@
 <template>
   <div>
     <h2 class="h4 mb-3">Options</h2>
-    <KGrid
-      :data="localOptions"
-      :style="{ height: '300px' }"
-    >
-      <KGridToolbar>
-        <button type="button" class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary" @click="addOption">
-          Add Option
+    <div class="grid-container">
+      <KGrid
+        :data="localOptions"
+        :style="{ height: '300px' }"
+      >
+        <KGridColumn field="name" title="Name">
+          <template v-slot:cell="{ dataItem }">
+            <input
+              type="text"
+              class="k-input k-input-md k-rounded-md k-input-solid"
+              v-model="dataItem.name"
+              @input="updateOptions"
+              placeholder="Enter option name"
+            />
+          </template>
+        </KGridColumn>
+        <KGridColumn v-for="criterion in criteria" :key="criterion.id" :field="'scores.' + criterion.id" :title="criterion.name">
+          <template v-slot:cell="{ dataItem }">
+            <KNumericTextBox
+              v-model="dataItem.scores[criterion.id]"
+              :min="1"
+              :max="10"
+              :step="1"
+              @change="updateOptions"
+            />
+          </template>
+        </KGridColumn>
+        <KGridColumn width="100">
+          <template v-slot:cell="{ dataItem }">
+            <button
+              type="button"
+              class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-error"
+              @click="removeOption(dataItem)"
+            >
+              Delete
+            </button>
+          </template>
+        </KGridColumn>
+      </KGrid>
+      <div class="grid-actions mt-3">
+        <button 
+          type="button" 
+          class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary"
+          @click="addOption"
+        >
+          Add New Option
         </button>
-      </KGridToolbar>
-      <KGridColumn field="name" title="Name">
-        <template v-slot:cell="{ dataItem }">
-          <input
-            type="text"
-            class="k-input k-input-md k-rounded-md k-input-solid"
-            v-model="dataItem.name"
-            @input="updateOptions"
-          />
-        </template>
-      </KGridColumn>
-      <KGridColumn v-for="criterion in criteria" :key="criterion.id" :field="'scores.' + criterion.id" :title="criterion.name">
-        <template v-slot:cell="{ dataItem }">
-          <KNumericTextBox
-            v-model="dataItem.scores[criterion.id]"
-            :min="1"
-            :max="10"
-            :step="1"
-            @change="updateOptions"
-          />
-        </template>
-      </KGridColumn>
-      <KGridColumn width="100">
-        <template v-slot:cell="{ dataItem }">
-          <button
-            type="button"
-            class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-error"
-            @click="removeOption(dataItem)"
-          >
-            Delete
-          </button>
-        </template>
-      </KGridColumn>
-    </KGrid>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -111,6 +118,17 @@ const updateOptions = () => {
 </script>
 
 <style scoped>
+.grid-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
 .k-grid {
   border: 1px solid #dee2e6;
   border-radius: 0.25rem;
@@ -146,5 +164,9 @@ const updateOptions = () => {
   padding: 0.5rem;
   font-weight: 600;
   color: #495057;
+}
+
+.k-input {
+  width: 100%;
 }
 </style> 

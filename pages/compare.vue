@@ -10,13 +10,16 @@
             type="button" 
             id="loadScenarioDropdown" 
             data-bs-toggle="dropdown" 
+            :disabled="scenarios.length === 0"
             aria-expanded="false"
           >
-            Load Scenario
+            Load Scenario {{ scenarios.length === 0 ? '(None Available)' : '' }}
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loadScenarioDropdown">
             <li v-if="scenarios.length === 0">
-              <span class="dropdown-item text-muted">No saved scenarios</span>
+              <span class="dropdown-item text-muted">
+                No saved scenarios available. Save a scenario first!
+              </span>
             </li>
             <li v-for="scenario in scenarios" :key="scenario.id">
               <a 
@@ -33,8 +36,7 @@
         <!-- Save Scenario Button -->
         <button 
           class="btn btn-outline-success" 
-          data-bs-toggle="modal"
-          data-bs-target="#saveScenarioModal"
+          @click="showSaveModal"
           :disabled="!canSave"
         >
           Save Scenario
@@ -77,6 +79,7 @@
     <div 
       class="modal fade" 
       id="saveScenarioModal"
+      ref="saveModalRef"
       tabindex="-1" 
       aria-labelledby="saveScenarioModalLabel"
       aria-hidden="true"
@@ -88,7 +91,7 @@
             <button 
               type="button" 
               class="btn-close" 
-              data-bs-dismiss="modal"
+              @click="hideSaveModal"
               aria-label="Close"
             ></button>
           </div>
@@ -108,7 +111,7 @@
             <button 
               type="button" 
               class="btn btn-secondary" 
-              data-bs-dismiss="modal"
+              @click="hideSaveModal"
             >
               Cancel
             </button>
@@ -139,6 +142,7 @@ const criteria = ref([])
 const options = ref([])
 const scenarios = ref([])
 const scenarioName = ref('')
+const saveModalRef = ref(null)
 let saveModal = null
 
 // Initial criteria for demonstration
@@ -199,51 +203,70 @@ const navigateToResults = () => {
 // Load scenarios from the backend
 const fetchScenarios = async () => {
   try {
-    const response = await $axios.get('/scenarios')
-    scenarios.value = response.data
+    const response = await $axios.get('/api/scenarios')
+    scenarios.value = response.data || []
   } catch (error) {
     console.error('Error fetching scenarios:', error)
+    scenarios.value = [] // Ensure scenarios is an empty array on error
   }
 }
 
 // Load a specific scenario
 const loadScenario = (scenario) => {
-  criteria.value = scenario.criteria
-  options.value = scenario.options
-}
-
-// Save the current scenario
-const saveScenario = async () => {
-  try {
-    const response = await $axios.post('/scenarios', {
-      name: scenarioName.value,
-      criteria: criteria.value,
-      options: options.value
-    })
-
-    // Add the new scenario to the list
-    scenarios.value.push(response.data)
-
-    // Reset modal state and close it
-    scenarioName.value = ''
-    if (saveModal) {
-      saveModal.hide()
-    }
-  } catch (error) {
-    console.error('Error saving scenario:', error)
-  }
+  criteria.value = [...scenario.criteria]
+  options.value = [...scenario.options]
 }
 
 // Initialize Bootstrap components when mounted
 onMounted(() => {
   fetchScenarios()
   
-  // Initialize the save modal
+  // Initialize Bootstrap modal after component is mounted
   const modalElement = document.getElementById('saveScenarioModal')
   if (modalElement) {
-    saveModal = new bootstrap.Modal(modalElement)
+    import('bootstrap').then(bootstrap => {
+      saveModal = new bootstrap.Modal(modalElement)
+    })
   }
 })
+
+// Function to show modal
+const showSaveModal = () => {
+  if (saveModal) {
+    saveModal.show()
+  }
+}
+
+// Function to hide modal
+const hideSaveModal = () => {
+  if (saveModal) {
+    saveModal.hide()
+    scenarioName.value = '' // Reset the scenario name
+  }
+}
+
+// Save scenario function
+const saveScenario = async () => {
+  try {
+    const response = await $axios.post('/api/scenarios', {
+      name: scenarioName.value,
+      criteria: criteria.value,
+      options: options.value
+    })
+    
+    // Add the new scenario to the list
+    scenarios.value.push(response.data)
+    
+    // Hide the modal and reset the form
+    hideSaveModal()
+    
+    // Show success message (you can implement this as needed)
+    alert('Scenario saved successfully!')
+  } catch (error) {
+    console.error('Error saving scenario:', error)
+    alert('Failed to save scenario. Please try again.')
+  }
+}
 </script>
 
 <style scoped>
