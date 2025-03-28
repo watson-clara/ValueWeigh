@@ -1,129 +1,108 @@
 <template>
-  <div class="criteria-grid">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Decision Criteria</h5>
-        <button class="btn btn-primary btn-sm" @click="addCriterion">
+  <div>
+    <h2 class="h4 mb-3">Criteria</h2>
+    <KGrid
+      :data="localCriteria"
+      :style="{ height: '300px' }"
+    >
+      <KGridToolbar>
+        <button type="button" class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary" @click="addCriteria">
           Add Criterion
         </button>
-      </div>
-      <div class="card-body">
-        <kendo-grid
-          :data="criteria"
-          :resizable="true"
-          :sortable="true"
-          :pageable="false"
-          :scrollable="true"
-          :height="400"
-        >
-          <kendo-grid-column
-            field="name"
-            title="Criterion"
-            :width="300"
-          >
-            <template v-slot:default="{ dataItem }">
-              <input
-                type="text"
-                class="form-control"
-                v-model="dataItem.name"
-                @input="updateCriteria"
-              />
-            </template>
-          </kendo-grid-column>
-
-          <kendo-grid-column
-            field="weight"
-            title="Weight"
-            :width="150"
-          >
-            <template v-slot:default="{ dataItem }">
-              <kendo-numerictextbox
-                v-model="dataItem.weight"
-                :min="1"
-                :max="10"
-                :step="1"
-                @change="updateCriteria"
-              />
-            </template>
-          </kendo-grid-column>
-
-          <kendo-grid-column
-            :width="100"
-            :command="['destroy']"
-            title="&nbsp;"
+      </KGridToolbar>
+      <KGridColumn field="name" title="Name">
+        <template v-slot:cell="{ dataItem }">
+          <input
+            type="text"
+            class="k-input k-input-md k-rounded-md k-input-solid"
+            v-model="dataItem.name"
+            @input="updateCriteria"
           />
-        </kendo-grid>
-      </div>
-    </div>
+        </template>
+      </KGridColumn>
+      <KGridColumn field="weight" title="Weight (1-10)">
+        <template v-slot:cell="{ dataItem }">
+          <KNumericTextBox
+            v-model="dataItem.weight"
+            :min="1"
+            :max="10"
+            :step="1"
+            @change="updateCriteria"
+          />
+        </template>
+      </KGridColumn>
+      <KGridColumn width="100">
+        <template v-slot:cell="{ dataItem }">
+          <button
+            type="button"
+            class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-error"
+            @click="removeCriteria(dataItem)"
+          >
+            Delete
+          </button>
+        </template>
+      </KGridColumn>
+    </KGrid>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Grid as KendoGrid } from '@progress/kendo-vue-grid'
-import { GridColumn as KendoGridColumn } from '@progress/kendo-vue-grid'
-import { NumericTextBox as KendoNumericTextBox } from '@progress/kendo-vue-inputs'
+import { ref, watch, onMounted } from 'vue'
 
-const criteria = ref([])
-
-const addCriterion = () => {
-  criteria.value.push({
-    id: Date.now(), // Unique identifier for each row
-    name: '',
-    weight: 5 // Default weight
-  })
-  updateCriteria()
-}
-
-const removeCriterion = (dataItem) => {
-  const index = criteria.value.findIndex(item => item.id === dataItem.id)
-  if (index !== -1) {
-    criteria.value.splice(index, 1)
-    updateCriteria()
-  }
-}
-
-const updateCriteria = () => {
-  // Emit the updated criteria array to the parent
-  emit('update:criteria', criteria.value)
-}
-
-// Define props and emits
 const props = defineProps({
+  criteria: {
+    type: Array,
+    required: true
+  },
   initialCriteria: {
     type: Array,
-    default: () => []
+    required: true
   }
 })
 
 const emit = defineEmits(['update:criteria'])
 
-// Initialize criteria from props
+const localCriteria = ref([])
+
+// Initialize criteria with initial data
 onMounted(() => {
-  if (props.initialCriteria.length > 0) {
-    criteria.value = props.initialCriteria.map(item => ({
-      id: item.id || Date.now(),
-      name: item.name || '',
-      weight: item.weight || 5
-    }))
-    updateCriteria()
+  if (props.criteria.length === 0 && props.initialCriteria.length > 0) {
+    localCriteria.value = [...props.initialCriteria]
+    emit('update:criteria', localCriteria.value)
   } else {
-    // Add one empty criterion by default
-    addCriterion()
+    localCriteria.value = [...props.criteria]
   }
 })
 
-// Expose the criteria array for parent components
-defineExpose({
-  criteria
-})
+// Watch for external changes
+watch(() => props.criteria, (newValue) => {
+  localCriteria.value = [...newValue]
+}, { deep: true })
+
+const addCriteria = () => {
+  const newId = Math.max(0, ...localCriteria.value.map(c => c.id)) + 1
+  localCriteria.value.push({
+    id: newId,
+    name: '',
+    weight: 5
+  })
+  updateCriteria()
+}
+
+const removeCriteria = (item) => {
+  const index = localCriteria.value.findIndex(c => c.id === item.id)
+  if (index !== -1) {
+    localCriteria.value.splice(index, 1)
+    updateCriteria()
+  }
+}
+
+const updateCriteria = () => {
+  emit('update:criteria', localCriteria.value)
+}
 </script>
 
 <style scoped>
-.criteria-grid {
-  margin-bottom: 1rem;
-}
-
 .k-grid {
   border: 1px solid #dee2e6;
   border-radius: 0.25rem;

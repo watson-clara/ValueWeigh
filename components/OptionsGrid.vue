@@ -1,162 +1,116 @@
 <template>
-  <div class="options-grid">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Options</h5>
-        <button class="btn btn-primary btn-sm" @click="addOption">
+  <div>
+    <h2 class="h4 mb-3">Options</h2>
+    <KGrid
+      :data="localOptions"
+      :style="{ height: '300px' }"
+    >
+      <KGridToolbar>
+        <button type="button" class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-primary" @click="addOption">
           Add Option
         </button>
-      </div>
-      <div class="card-body">
-        <kendo-grid
-          :data="options"
-          :resizable="true"
-          :sortable="true"
-          :pageable="false"
-          :scrollable="true"
-          :height="400"
-        >
-          <!-- Option Name Column -->
-          <kendo-grid-column
-            field="name"
-            title="Option Name"
-            :width="200"
-          >
-            <template v-slot:default="{ dataItem }">
-              <input
-                type="text"
-                class="form-control"
-                v-model="dataItem.name"
-                @input="updateOptions"
-              />
-            </template>
-          </kendo-grid-column>
-
-          <!-- Dynamic Criteria Columns -->
-          <kendo-grid-column
-            v-for="criterion in criteria"
-            :key="criterion.id"
-            :field="'scores.' + criterion.id"
-            :title="criterion.name"
-            :width="150"
-          >
-            <template v-slot:default="{ dataItem }">
-              <kendo-numerictextbox
-                v-model="dataItem.scores[criterion.id]"
-                :min="1"
-                :max="10"
-                :step="1"
-                @change="updateOptions"
-              />
-            </template>
-          </kendo-grid-column>
-
-          <!-- Delete Column -->
-          <kendo-grid-column
-            :width="100"
-            :command="['destroy']"
-            title="&nbsp;"
+      </KGridToolbar>
+      <KGridColumn field="name" title="Name">
+        <template v-slot:cell="{ dataItem }">
+          <input
+            type="text"
+            class="k-input k-input-md k-rounded-md k-input-solid"
+            v-model="dataItem.name"
+            @input="updateOptions"
           />
-        </kendo-grid>
-      </div>
-    </div>
+        </template>
+      </KGridColumn>
+      <KGridColumn v-for="criterion in criteria" :key="criterion.id" :field="'scores.' + criterion.id" :title="criterion.name">
+        <template v-slot:cell="{ dataItem }">
+          <KNumericTextBox
+            v-model="dataItem.scores[criterion.id]"
+            :min="1"
+            :max="10"
+            :step="1"
+            @change="updateOptions"
+          />
+        </template>
+      </KGridColumn>
+      <KGridColumn width="100">
+        <template v-slot:cell="{ dataItem }">
+          <button
+            type="button"
+            class="k-button k-button-md k-rounded-md k-button-solid k-button-solid-error"
+            @click="removeOption(dataItem)"
+          >
+            Delete
+          </button>
+        </template>
+      </KGridColumn>
+    </KGrid>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { Grid as KendoGrid } from '@progress/kendo-vue-grid'
-import { GridColumn as KendoGridColumn } from '@progress/kendo-vue-grid'
-import { NumericTextBox as KendoNumericTextBox } from '@progress/kendo-vue-inputs'
+import { ref, watch, onMounted } from 'vue'
 
 const props = defineProps({
+  options: {
+    type: Array,
+    required: true
+  },
   criteria: {
     type: Array,
     required: true
   },
   initialOptions: {
     type: Array,
-    default: () => []
+    required: true
   }
 })
 
 const emit = defineEmits(['update:options'])
 
-const options = ref([])
+const localOptions = ref([])
 
-// Initialize scores object for a new option
-const createScoresObject = () => {
-  return props.criteria.reduce((acc, criterion) => {
-    acc[criterion.id] = 5 // Default score of 5
-    return acc
-  }, {})
-}
+// Initialize options with initial data
+onMounted(() => {
+  if (props.options.length === 0 && props.initialOptions.length > 0) {
+    localOptions.value = [...props.initialOptions]
+    emit('update:options', localOptions.value)
+  } else {
+    localOptions.value = [...props.options]
+  }
+})
+
+// Watch for external changes
+watch(() => props.options, (newValue) => {
+  localOptions.value = [...newValue]
+}, { deep: true })
 
 const addOption = () => {
-  options.value.push({
-    id: Date.now(),
+  const newId = Math.max(0, ...localOptions.value.map(o => o.id)) + 1
+  const scores = {}
+  props.criteria.forEach(criterion => {
+    scores[criterion.id] = 5
+  })
+  localOptions.value.push({
+    id: newId,
     name: '',
-    scores: createScoresObject()
+    scores
   })
   updateOptions()
 }
 
-const removeOption = (dataItem) => {
-  const index = options.value.findIndex(item => item.id === dataItem.id)
+const removeOption = (item) => {
+  const index = localOptions.value.findIndex(o => o.id === item.id)
   if (index !== -1) {
-    options.value.splice(index, 1)
+    localOptions.value.splice(index, 1)
     updateOptions()
   }
 }
 
 const updateOptions = () => {
-  emit('update:options', options.value)
+  emit('update:options', localOptions.value)
 }
-
-// Watch for changes in criteria to update scores
-watch(() => props.criteria, (newCriteria) => {
-  options.value = options.value.map(option => {
-    const newScores = createScoresObject()
-    // Preserve existing scores for criteria that still exist
-    Object.keys(option.scores).forEach(criterionId => {
-      if (newScores[criterionId] !== undefined) {
-        newScores[criterionId] = option.scores[criterionId]
-      }
-    })
-    return {
-      ...option,
-      scores: newScores
-    }
-  })
-  updateOptions()
-}, { deep: true })
-
-// Initialize options from props
-onMounted(() => {
-  if (props.initialOptions.length > 0) {
-    options.value = props.initialOptions.map(option => ({
-      id: option.id || Date.now(),
-      name: option.name || '',
-      scores: option.scores || createScoresObject()
-    }))
-    updateOptions()
-  } else {
-    // Add one empty option by default
-    addOption()
-  }
-})
-
-// Expose the options array for parent components
-defineExpose({
-  options
-})
 </script>
 
 <style scoped>
-.options-grid {
-  margin-bottom: 1rem;
-}
-
 .k-grid {
   border: 1px solid #dee2e6;
   border-radius: 0.25rem;

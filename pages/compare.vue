@@ -33,7 +33,8 @@
         <!-- Save Scenario Button -->
         <button 
           class="btn btn-outline-success" 
-          @click="showSaveModal = true"
+          data-bs-toggle="modal"
+          data-bs-target="#saveScenarioModal"
           :disabled="!canSave"
         >
           Save Scenario
@@ -75,18 +76,20 @@
     <!-- Save Scenario Modal -->
     <div 
       class="modal fade" 
-      :class="{ show: showSaveModal }" 
+      id="saveScenarioModal"
       tabindex="-1" 
-      :style="{ display: showSaveModal ? 'block' : 'none' }"
+      aria-labelledby="saveScenarioModalLabel"
+      aria-hidden="true"
     >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Save Scenario</h5>
+            <h5 class="modal-title" id="saveScenarioModalLabel">Save Scenario</h5>
             <button 
               type="button" 
               class="btn-close" 
-              @click="showSaveModal = false"
+              data-bs-dismiss="modal"
+              aria-label="Close"
             ></button>
           </div>
           <div class="modal-body">
@@ -105,7 +108,7 @@
             <button 
               type="button" 
               class="btn btn-secondary" 
-              @click="showSaveModal = false"
+              data-bs-dismiss="modal"
             >
               Cancel
             </button>
@@ -121,11 +124,6 @@
         </div>
       </div>
     </div>
-    <div 
-      class="modal-backdrop fade" 
-      :class="{ show: showSaveModal }"
-      v-if="showSaveModal"
-    ></div>
   </div>
 </template>
 
@@ -140,8 +138,8 @@ const { $axios } = useNuxtApp()
 const criteria = ref([])
 const options = ref([])
 const scenarios = ref([])
-const showSaveModal = ref(false)
 const scenarioName = ref('')
+let saveModal = null
 
 // Initial criteria for demonstration
 const initialCriteria = [
@@ -226,17 +224,25 @@ const saveScenario = async () => {
     // Add the new scenario to the list
     scenarios.value.push(response.data)
 
-    // Reset modal state
-    showSaveModal.value = false
+    // Reset modal state and close it
     scenarioName.value = ''
+    if (saveModal) {
+      saveModal.hide()
+    }
   } catch (error) {
     console.error('Error saving scenario:', error)
   }
 }
 
-// Fetch scenarios when the component mounts
+// Initialize Bootstrap components when mounted
 onMounted(() => {
   fetchScenarios()
+  
+  // Initialize the save modal
+  const modalElement = document.getElementById('saveScenarioModal')
+  if (modalElement) {
+    saveModal = new bootstrap.Modal(modalElement)
+  }
 })
 </script>
 

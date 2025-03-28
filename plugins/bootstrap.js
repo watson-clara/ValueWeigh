@@ -1,21 +1,27 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
+import { onMounted } from 'vue'
 
 export default defineNuxtPlugin((nuxtApp) => {
   if (process.client) {
-    const bootstrap = require('bootstrap')
-    // Initialize all Bootstrap components
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    // Import Bootstrap bundle
+    import('bootstrap/dist/js/bootstrap.bundle.min.js').then((bootstrap) => {
+      // Make Bootstrap available globally
+      window.bootstrap = bootstrap
 
-    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
-    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+      // Initialize Bootstrap components after DOM is ready
+      onMounted(() => {
+        // Initialize all dropdowns
+        const dropdownTriggerList = document.querySelectorAll('[data-bs-toggle="dropdown"]')
+        const dropdownList = [...dropdownTriggerList].map(dropdownTriggerEl => 
+          new bootstrap.Dropdown(dropdownTriggerEl)
+        )
 
-    // Initialize dropdowns
-    const dropdownElementList = document.querySelectorAll('[data-bs-toggle="dropdown"]')
-    const dropdownList = [...dropdownElementList].map(dropdownToggleEl => new bootstrap.Dropdown(dropdownToggleEl))
-
-    // Initialize modals
-    const modalElementList = document.querySelectorAll('[data-bs-toggle="modal"]')
-    const modalList = [...modalElementList].map(modalToggleEl => new bootstrap.Modal(modalToggleEl))
+        // Initialize all modals
+        const modalTriggerList = document.querySelectorAll('[data-bs-toggle="modal"]')
+        const modalList = [...modalTriggerList].map(modalTriggerEl => 
+          new bootstrap.Modal(modalTriggerEl)
+        )
+      })
+    })
   }
 }) 
