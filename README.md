@@ -49,27 +49,6 @@ npm run dev
 
 The application will be available at `http://localhost:3000`.
 
-## Project Structure
-
-```
-valueweigh/
-├── components/          # Vue components
-│   ├── CriteriaGrid.vue    # Grid for managing criteria
-│   └── OptionsGrid.vue     # Grid for managing options
-├── pages/              # Application pages
-│   ├── index.vue          # Landing page
-│   ├── compare.vue        # Main comparison page
-│   └── results.vue        # Results display page
-├── plugins/            # Nuxt plugins
-│   ├── bootstrap.js       # Bootstrap initialization
-│   └── kendo.js          # Kendo UI setup
-├── server/             # Backend server code
-│   └── api/             # API endpoints
-├── .env                # Environment variables
-├── nuxt.config.ts      # Nuxt configuration
-└── package.json        # Project dependencies
-```
-
 ## Usage
 
 1. **Define Criteria**:
